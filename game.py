@@ -3,12 +3,12 @@ import random
 import sys, time, math
 
 pygame.init()
-fps=10
+fps=20
 fpsclock=pygame.time.Clock()
 font = pygame.font.Font('freesansbold.ttf', 32)
 
-screen_height=300
-screen_width=300
+screen_height=250
+screen_width=250
 sur_obj=pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Snake Game")
 White=(255,255,255)#(random.randint(0,255),random.randint(0,255),random.randint(0,255))
@@ -152,7 +152,7 @@ class Game():
     
     def crash(self, x, y):
         in_bod=False
-        for body in self.body_cells[1:]:
+        for body in self.body_cells:
             if x in range(body.rect.x, body.rect.x+snake_bod_w+1) and y in range(body.rect.y ,body.rect.y+ snake_bod_h+1):
                 in_bod=True    
                 return in_bod
@@ -168,7 +168,7 @@ class Game():
 
     def create_food(self):
         x,y=[random.randint(2, COLUMN-3)* snake_bod_w, random.randint(2, ROWS-3)* snake_bod_w]
-        while self.crash(x,y):
+        while self.crash(x,y) and x :
             x, y=self.generate()
         self.foodx_y=[x,y]
 
@@ -197,13 +197,23 @@ class Game():
         textRect.center=(70, 20)
         sur_obj.blit(text, textRect)
 
+    def draw(self):
+        sur_obj.fill(black)
+
+        pygame.draw.rect(sur_obj, (0,255,0), (self.foodx_y[0], self.foodx_y[1], snake_bod_w, snake_bod_h))
+
+        text = font.render(f'Score {self.total_score}', True, blue)
+        textRect = text.get_rect()
+        textRect.center=(70, 20)
+        sur_obj.blit(text, textRect)
+        
     def set_game_stop(self):
         self.game_stop=True
 
     def check_collision(self):
         head=self.body_cells[0]
         c,r= head.get_pos()
-        if c==-1 or r==-1 or c==30 or r==30:
+        if c==-1 or r==-1 or c==COLUMN+1 or r==ROWS+1:
             self.set_game_stop()
    
 
@@ -232,15 +242,7 @@ class Game():
         foodc, foodr=self.foodx_y[0]// snake_bod_w, self.foodx_y[1]//snake_bod_w
         return foodc, foodr
     
-    def draw(self):
-        sur_obj.fill(black)
-
-        pygame.draw.rect(sur_obj, (0,255,0), (self.foodx_y[0], self.foodx_y[1], snake_bod_w, snake_bod_h))
-
-        text = font.render(f'Score {self.total_score}', True, blue)
-        textRect = text.get_rect()
-        textRect.center=(70, 20)
-        sur_obj.blit(text, textRect)
+    
 
     def update(self):         
         pygame.display.update() 
@@ -268,7 +270,7 @@ class Game():
             reward=10
             return reward
    
-        if col==-1 or row==-1 or col==30 or row==30:
+        if col==-1 or row==-1 or col==COLUMN+1 or row==ROWS+1:
             reward=-10
    
             return reward
@@ -314,7 +316,7 @@ class Game():
         '''
         distance = abs(row - foodrow) + abs(col - foodcol)
         normalized_distance = distance / 59   
-        reward = reward*((round(1 + 9 * (1 - normalized_distance), 2))/10) 
+        reward =  (reward*((round(1 + 9 * (1 - normalized_distance), 2))/10) )
 
         return reward
     
@@ -444,10 +446,10 @@ class Game():
 
         
         
-        states[0][12]=r/(ROWS-1)
-        states[0][13]=c/(COLUMN-1)
-        states[0][14]=foodc/(COLUMN-1)
-        states[0][15]=foodr/(ROWS-1)
+        states[0][12]=r/(ROWS)
+        states[0][13]=c/(COLUMN)
+        states[0][14]=foodc/(COLUMN)
+        states[0][15]=foodr/(ROWS)
 
         
         return states
