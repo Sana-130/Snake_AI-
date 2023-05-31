@@ -10,7 +10,7 @@ class Agent():
     def __init__(self):
         self.epsilon = 1.0 # Initial exploration rate
         self.epsilon_min = 0.1
-        self.epsilon_decay = 0.99999
+        self.epsilon_decay = 0.9#0.99999
         self.target_freq = 5
         self.gamma = 0.99
         self.ln_rate=0.001
@@ -24,7 +24,7 @@ class Agent():
         self.target_network=Target_network(self.n_state_size, self.n_nuerons, self.output_layer)
         self.game=Game()
         self.memory=ReplayBuffer(self.m_buffer_size, [1, self.n_state_size], [1,1])
-        self.n_episodes=7000
+        self.n_episodes=1000
         self.pre_train_episodes=999
         self.pretrain()
         self.max_step=3000
@@ -109,48 +109,10 @@ class Agent():
 
 
             #print(target_qvalues[0])
-        loss=self.q_network.backprop(state, target_qvalues, self.ln_rate)
+        loss=self.q_network.backpropagation( target_qvalues)
         return loss
 
                             
-    def addtomemory(self, states, action, reward, done, next_state):
-
-        self.memory.add(states, action, reward, done, next_state)
-  
-        if self.memory.pointer>=self.m_max_pointer:
-            state, actions, rewards, dones, next_states = self.memory.sample(self.m_batch_size)
-
-            #print(actions)   
-            actions = np.array(actions).reshape(self.m_batch_size, 1)
-            #print(actions)
-            rewards = np.array(rewards).reshape(self.m_batch_size, 1)
-            dones = np.array(dones).reshape(self.m_batch_size, 1)
-            state= np.array(state).reshape(self.m_batch_size, self.n_state_size)
-            next_states = np.array(next_states).reshape(self.m_batch_size, self.n_state_size)
-
-
-            current_qvalues= self.q_network.forward(state)
-            next_qvalues=self.target_network.forward(next_states)
-
-            target_qvalues = current_qvalues.copy()
-        
-        
-            for i in range(self.m_batch_size):
-                action = int(actions[i])
-                reward = rewards[i]
-                done = dones[i]
-                next_q = np.max(next_qvalues[i])
-
-                #print(action, reward, done, next_q)
-                if done:
-                    target_qvalues[i, action] = reward
-                else:
-                    target_qvalues[i, action] = reward + self.gamma * next_q
-
-
-            #print(target_qvalues[0])
-            loss=self.q_network.backprop(state, target_qvalues, self.ln_rate)
-
     def save_model(self):
         file = open('save', 'wb')
         pickle.dump(self.q_network, file)
@@ -161,6 +123,11 @@ class Agent():
         with open('save', 'rb') as file:
             self.q_network=pickle.load(file)
 
+    def set_model(self):
+        with open('TheDumbSnake\models\model_5', 'rb') as file:
+            data=pickle.load(file)
+            self.q_network=data
+            self.target_network=data
 
     def pretrain(self):
         self.game.build()
@@ -182,7 +149,7 @@ class Agent():
         print("pretraining done")
 
     def train(self):
-        
+        self.set_model()
 
         while self.training:
             if self.new_episode:

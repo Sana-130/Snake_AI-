@@ -425,11 +425,11 @@ class Game():
                 #print("danger down")
                 states[0][7]=1
         #print(states[0][4], states[0][5], states[0][6], states[0][7] )
-        if c==29:
+        if c==COLUMN:
             states[0][4]=1 #danger right
         if c==0:
             states[0][5]=1 # danger left
-        if r==29:
+        if r==ROWS:
             states[0][7]=1 #dabger down
         if r==0:
             states[0][6]=1 #danger up

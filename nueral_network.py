@@ -9,12 +9,19 @@ class Layer_Dense:
         self.biases=np.zeros((1, n_nuerons))
 
     def forward(self, inputs):
+        self.inputs = inputs
         self.output= np.dot(inputs, self.weights) + self.biases
+
+    def backward(self, dvalues):
+        self.dweights = np.dot(self.inputs.T, dvalues)
+        self.dbiases = np.sum(dvalues, axis=0, keepdims=True)
+        self.dinputs = np.dot(dvalues, self.weights.T)
 
 
 class Activation_ReLU:
     
     def forward(self, inputs):
+        self.inputs = inputs
         self.output = np.maximum(0, inputs)
         return self.output
 
@@ -81,39 +88,23 @@ class DQN_network():
 
         return self.activation2.output
     
-    def backprop(self, X, y_true, learning_rate):
-        global epsilon
-      
-        relu_output=self.activation1.output
-        final_output=self.activation2.output
 
-     
-        delta3 = self.mse.backward(final_output, y_true)
-
-        dW2 = np.dot(relu_output.T, delta3)
-        db2 = np.sum(delta3, axis=0, keepdims=True)
+    def backpropagation(self,  y_true):
         
-    
-        dh = np.dot(delta3, self.dense2.weights.T)
-
-        dh[relu_output <= 0] = 0
-        dh *= (relu_output > 0)
-    
-        dW1 = np.dot(X.T, dh)
-        db1 = np.sum(dh, axis=0, keepdims=True)
+        delta3 = self.mse.backward(self.activation2.output, y_true)
+        self.dense2.backward(delta3)
+        self.activation1.backward(self.dense2.dinputs)
+        self.dense1.backward(self.activation1.dinputs)
 
         self.optimizer.pre_update_params()
-        self.optimizer.update_params(self.dense1, dW1, db1)
-        self.optimizer.update_params(self.dense2, dW2, db2)
+        self.optimizer.update_params(self.dense1, self.dense1.dweights, self.dense1.dbiases)
+        self.optimizer.update_params(self.dense2, self.dense2.dweights, self.dense2.dbiases)
         self.optimizer.post_update_params()
-        #self.dense2.weights -= learning_rate * dW2
-        #self.dense2.biases -= learning_rate * db2
-        #self.dense1.weights -= learning_rate * dW1
-        #self.dense1.biases -= learning_rate * db1
-     
-        loss= self.mse.mean_squared_error(final_output, y_true)
-        return loss
 
+        loss= self.mse.mean_squared_error(self.activation2.output, y_true)
+        return loss
+    
+    
 class Optimizer_Adam:
 
     def __init__(self, learning_rate=0.001, decay=0., epsilon=1e-7,
